@@ -83,6 +83,7 @@
             position: relative;
             width: 100%;
             height: 100%;
+            overflow: hidden;
         }
         
         .slide {
@@ -92,19 +93,100 @@
             width: 100%;
             height: 100%;
             opacity: 0;
-            transition: opacity 2s ease-in-out;
+            transform: scale(1.1);
+            transition: all 3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             z-index: 1;
             background-position: center 60% !important;
+            background-size: cover !important;
+            filter: brightness(0.7) contrast(1.1) saturate(1.2);
         }
         
         .slide.active {
             opacity: 1;
+            transform: scale(1);
             z-index: 2;
         }
         
         .slide.fade-out {
             opacity: 0;
+            transform: scale(0.95);
             z-index: 1;
+        }
+        
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(212, 175, 55, 0.1) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(212, 175, 55, 0.05) 100%);
+            z-index: 1;
+        }
+        
+        /* Parallax effect for hero content */
+        .hero-content {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+        
+        /* Slide indicators */
+        .slide-indicators {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+        
+        .slide-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .slide-indicator.active {
+            background: #D4AF37;
+            border-color: rgba(212, 175, 55, 0.5);
+            transform: scale(1.2);
+        }
+        
+        .slide-indicator:hover {
+            background: rgba(212, 175, 55, 0.7);
+            transform: scale(1.1);
+        }
+        
+        /* Hero animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 1s ease-out forwards;
+        }
+        
+        .animate-fade-in-up-delay {
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.3s forwards;
+        }
+        
+        .animate-fade-in-up-delay-2 {
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.6s forwards;
         }
     </style>
 </head>
@@ -157,18 +239,28 @@
             <div class="slide" style="background-image: url('https://blogger.googleusercontent.com/img/a/AVvXsEgZTp3333-_f9on-CLr9pkwzua7rNHJpmAcusaUzHuLN11f-0c1THXBVZx1OnMohy3ldBI-DdA9nOXRKfXeUOcertCdzHZJ7Jxe_Nu9ciuXCXW2mFI7z8GYb3EcK8G6pBpH5XWNynTDBfrhp9moIa2BT6bnCYE5hPpclX89VtT7sdgFrK_LogmsMXZeX08t'); background-size: cover; background-position: center; background-repeat: no-repeat;"></div>
         </div>
         <!-- Dark overlay for better text readability -->
-        <div class="absolute inset-0 bg-black bg-opacity-80"></div>
-        <div class="relative z-10 text-center px-6">
-            <h1 class="font-playfair text-6xl md:text-8xl font-bold mb-6">
+        <div class="absolute inset-0 bg-black bg-opacity-75"></div>
+        <div class="relative z-10 text-center px-6 hero-content">
+            <h1 class="font-playfair text-6xl md:text-8xl font-bold mb-6 animate-fade-in-up">
                 <span class="gradient-gold">LUXO</span><br>
                 <span class="text-white">REDEFINIDO</span>
             </h1>
-            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto animate-fade-in-up-delay">
                 Descubra a elegância atemporal com nossa coleção exclusiva de alta qualidade
             </p>
-            <button class="btn-luxury px-8 py-4 text-black font-semibold text-lg rounded-full hover:shadow-2xl">
+            <button class="btn-luxury px-8 py-4 text-black font-semibold text-lg rounded-full hover:shadow-2xl animate-fade-in-up-delay-2">
                 EXPLORAR COLEÇÃO
             </button>
+        </div>
+        
+        <!-- Slide Indicators (Hidden) -->
+        <div class="slide-indicators hidden">
+            <div class="slide-indicator active" data-slide="0"></div>
+            <div class="slide-indicator" data-slide="1"></div>
+            <div class="slide-indicator" data-slide="2"></div>
+            <div class="slide-indicator" data-slide="3"></div>
+            <div class="slide-indicator" data-slide="4"></div>
+            <div class="slide-indicator" data-slide="5"></div>
         </div>
         <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
             <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -627,25 +719,61 @@
         // Background Slideshow functionality
         let currentSlide = 0;
         const slides = document.querySelectorAll('.slide');
+        const indicators = document.querySelectorAll('.slide-indicator');
         const totalSlides = slides.length;
+        let slideInterval;
 
-        function showNextSlide() {
+        function updateIndicators() {
+            indicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function showSlide(slideIndex) {
             // Remove active class from current slide
             slides[currentSlide].classList.remove('active');
             slides[currentSlide].classList.add('fade-out');
             
-            // Move to next slide
-            currentSlide = (currentSlide + 1) % totalSlides;
+            // Update current slide
+            currentSlide = slideIndex;
             
             // Add active class to new slide
             setTimeout(() => {
                 slides.forEach(slide => slide.classList.remove('fade-out'));
                 slides[currentSlide].classList.add('active');
+                updateIndicators();
             }, 100);
         }
 
-        // Start slideshow - change image every 5 seconds
-        setInterval(showNextSlide, 5000);
+        function showNextSlide() {
+            const nextSlide = (currentSlide + 1) % totalSlides;
+            showSlide(nextSlide);
+        }
+
+        function startSlideshow() {
+            slideInterval = setInterval(showNextSlide, 6000);
+        }
+
+        function stopSlideshow() {
+            clearInterval(slideInterval);
+        }
+
+        // Indicator click functionality
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => {
+                stopSlideshow();
+                showSlide(index);
+                setTimeout(startSlideshow, 3000); // Restart after 3 seconds
+            });
+        });
+
+        // Pause on hover
+        const heroSection = document.querySelector('#home');
+        heroSection.addEventListener('mouseenter', stopSlideshow);
+        heroSection.addEventListener('mouseleave', startSlideshow);
+
+        // Start slideshow
+        startSlideshow();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98014770059ff61b',t:'MTc1ODAzNTMwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980155ac70474f80',t:'MTc1ODAzNTg4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
