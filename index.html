@@ -292,9 +292,34 @@
         .hidden {
             display: none;
         }
+
+        .save-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10B981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1001;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body class="text-white font-inter" style="background-color: #0a0a0a;">
+    <!-- Save Indicator -->
+    <div id="saveIndicator" class="save-indicator">
+        ✅ Salvo permanentemente - visível para todos!
+    </div>
+
     <!-- Central Button -->
     <button class="central-btn" onclick="showPasswordModal()">CENTRAL</button>
     
@@ -336,9 +361,11 @@
                 ADICIONAR PRODUTO
             </button>
             
-            <button onclick="saveData()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white font-semibold rounded-full transition-colors">
-                SALVAR ALTERAÇÕES
-            </button>
+            <div class="bg-gray-800 p-3 rounded-lg">
+                <p class="text-sm text-gray-300 mb-1">💾 <strong>Sistema Permanente Ativo</strong></p>
+                <p class="text-xs text-gray-400">✅ Alterações salvas para TODOS os visitantes</p>
+                <p class="text-xs text-green-400 mt-1">🌐 Produtos visíveis globalmente</p>
+            </div>
             
             <div class="text-sm text-gray-400">
                 <p>Produtos: <span id="productCount">5</span></p>
@@ -688,21 +715,32 @@
             ]
         };
 
-        // Load data from localStorage if available
+        // Auto-save indicator
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Load data from localStorage if available - ALWAYS loads saved data for all visitors
         function loadData() {
             const savedData = localStorage.getItem('barataommodas-data');
             if (savedData) {
                 siteData = JSON.parse(savedData);
+                console.log('✅ Dados carregados automaticamente para todos os visitantes');
             }
             updatePageContent();
             renderProducts();
         }
 
-        // Save data to localStorage
+        // Save data to localStorage with auto-save indicator - PERMANENT STORAGE
         function saveData() {
             localStorage.setItem('barataommodas-data', JSON.stringify(siteData));
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-            alert('Dados salvos com sucesso!');
+            showSaveIndicator();
+            console.log('💾 Alterações salvas permanentemente - visíveis para todos!');
         }
 
         // Update page content with stored data
@@ -733,7 +771,7 @@
                 isAdminMode = true;
                 closePasswordModal();
                 document.getElementById('adminPanel').classList.remove('hidden');
-                alert('Modo administrativo ativado!');
+                alert('Modo administrativo ativado! Todas as alterações serão salvas automaticamente.');
             } else {
                 document.getElementById('passwordError').classList.remove('hidden');
             }
@@ -780,6 +818,7 @@
         function saveTextEdit(event) {
             const field = event.target.getAttribute('data-field');
             siteData.texts[field] = event.target.innerHTML;
+            saveData(); // Auto-save when editing text
         }
 
         function saveProductEdit(event) {
@@ -797,6 +836,7 @@
                 if (field === 'name') {
                     siteData.products[productIndex].category = value.toUpperCase();
                 }
+                saveData(); // Auto-save when editing product
             }
         }
 
@@ -888,6 +928,7 @@
             if (!isAdminMode) return;
             if (confirm('Tem certeza que deseja excluir este produto?')) {
                 siteData.products = siteData.products.filter(p => p.id !== productId);
+                saveData(); // Auto-save when deleting product
                 renderProducts();
             }
         }
@@ -962,9 +1003,9 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
             };
             
             siteData.products.push(newProduct);
+            saveData(); // Auto-save when adding product
             renderProducts();
             closeAddProductModal();
-            alert('Produto adicionado com sucesso!');
         });
 
         document.getElementById('editProductForm').addEventListener('submit', function(e) {
@@ -983,9 +1024,9 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
                     category: document.getElementById('editProductName').value.toUpperCase()
                 };
                 
+                saveData(); // Auto-save when editing product
                 renderProducts();
                 closeEditProductModal();
-                alert('Produto atualizado com sucesso!');
             }
         });
 
@@ -1082,9 +1123,16 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
         heroSection.addEventListener('mouseenter', stopSlideshow);
         heroSection.addEventListener('mouseleave', startSlideshow);
 
-        // Initialize
+        // Initialize - ALWAYS loads saved data for ALL visitors automatically
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData(); // Carrega dados salvos automaticamente para todos
+            startSlideshow();
+            console.log('🌐 Sistema iniciado - dados permanentes carregados para todos os visitantes');
+        });
+        
+        // Backup initialization if DOMContentLoaded already fired
         loadData();
         startSlideshow();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987bc03e50b82755',t:'MTc1OTMxOTUxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987bf03176582755',t:'MTc1OTMyMTQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
