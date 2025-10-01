@@ -6,6 +6,11 @@
     <title>Baratão Modas - Luxo & Estilo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <style>
         body {
             box-sizing: border-box;
@@ -312,12 +317,30 @@
             opacity: 1;
             transform: translateY(0);
         }
+
+        .firebase-status {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background: #1F2937;
+            color: #10B981;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1001;
+            border: 1px solid #10B981;
+        }
     </style>
 </head>
 <body class="text-white font-inter" style="background-color: #0a0a0a;">
+    <!-- Firebase Status Indicator -->
+    <div id="firebaseStatusIndicator" class="firebase-status hidden">
+        🔥 Firebase: Conectando...
+    </div>
+
     <!-- Save Indicator -->
     <div id="saveIndicator" class="save-indicator">
-        ✅ Salvo permanentemente - visível para todos!
+        ✅ Salvo no Firebase - visível globalmente!
     </div>
 
     <!-- Central Button -->
@@ -362,9 +385,9 @@
             </button>
             
             <div class="bg-gray-800 p-3 rounded-lg">
-                <p class="text-sm text-gray-300 mb-1">💾 <strong>Sistema Permanente Ativo</strong></p>
-                <p class="text-xs text-gray-400">✅ Alterações salvas para TODOS os visitantes</p>
-                <p class="text-xs text-green-400 mt-1">🌐 Produtos visíveis globalmente</p>
+                <p class="text-sm text-gray-300 mb-1" id="firebaseStatus">🔥 <strong>Firebase Conectado</strong></p>
+                <p class="text-xs text-gray-400">✅ Banco de dados na nuvem ativo</p>
+                <p class="text-xs text-green-400 mt-1">🌐 Sincronização global automática</p>
             </div>
             
             <div class="text-sm text-gray-400">
@@ -640,6 +663,54 @@
     </footer>
 
     <script>
+        // Firebase Configuration - SUAS CONFIGURAÇÕES REAIS
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtnU1tM83PgpPSBTjq41Bp4GunDMl91aM",
+            authDomain: "baratao-modas.firebaseapp.com",
+            projectId: "baratao-modas",
+            storageBucket: "baratao-modas.firebasestorage.app",
+            messagingSenderId: "964679599543",
+            appId: "1:964679599543:web:7f9b4af58f8a558005d432",
+            measurementId: "G-P5M508RKES"
+        };
+
+        // Initialize Firebase
+        let db = null;
+        let isFirebaseConnected = false;
+
+        function initializeFirebase() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                isFirebaseConnected = true;
+                updateFirebaseStatus('🔥 Firebase: Conectado', '#10B981');
+                console.log('🔥 Firebase conectado com sucesso!');
+                return true;
+            } catch (error) {
+                console.log('⚠️ Firebase não conectado:', error);
+                updateFirebaseStatus('⚠️ Firebase: Local', '#F59E0B');
+                isFirebaseConnected = false;
+                return false;
+            }
+        }
+
+        function updateFirebaseStatus(text, color) {
+            const statusElement = document.getElementById('firebaseStatusIndicator');
+            const panelStatus = document.getElementById('firebaseStatus');
+            
+            if (statusElement) {
+                statusElement.textContent = text;
+                statusElement.style.color = color;
+                statusElement.style.borderColor = color;
+            }
+            
+            if (panelStatus) {
+                panelStatus.innerHTML = isFirebaseConnected ? 
+                    '🔥 <strong>Firebase Conectado</strong>' : 
+                    '💾 <strong>Modo Local</strong>';
+            }
+        }
+
         // Admin System Variables
         let isAdminMode = false;
         let isEditMode = false;
@@ -715,48 +786,112 @@
             ]
         };
 
+        // Firebase Functions
+        async function loadDataFromFirebase() {
+            if (!isFirebaseConnected) return false;
+            
+            try {
+                // Load products
+                const productsSnapshot = await db.collection('products').get();
+                if (!productsSnapshot.empty) {
+                    siteData.products = [];
+                    productsSnapshot.forEach(doc => {
+                        siteData.products.push({ id: doc.id, ...doc.data() });
+                    });
+                }
+
+                // Load texts
+                const textsDoc = await db.collection('settings').doc('texts').get();
+                if (textsDoc.exists) {
+                    siteData.texts = { ...siteData.texts, ...textsDoc.data() };
+                }
+
+                console.log('🔥 Dados carregados do Firebase!');
+                return true;
+            } catch (error) {
+                console.log('⚠️ Erro ao carregar do Firebase:', error);
+                return false;
+            }
+        }
+
+        async function saveDataToFirebase() {
+            if (!isFirebaseConnected) return false;
+
+            try {
+                // Save products
+                const batch = db.batch();
+                
+                // Clear existing products
+                const existingProducts = await db.collection('products').get();
+                existingProducts.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                // Add current products
+                siteData.products.forEach(product => {
+                    const docRef = db.collection('products').doc(product.id.toString());
+                    batch.set(docRef, product);
+                });
+
+                // Save texts
+                const textsRef = db.collection('settings').doc('texts');
+                batch.set(textsRef, siteData.texts);
+
+                await batch.commit();
+                console.log('🔥 Dados salvos no Firebase!');
+                return true;
+            } catch (error) {
+                console.log('⚠️ Erro ao salvar no Firebase:', error);
+                return false;
+            }
+        }
+
         // Auto-save indicator
         function showSaveIndicator() {
             const indicator = document.getElementById('saveIndicator');
+            indicator.textContent = isFirebaseConnected ? 
+                '✅ Salvo no Firebase - visível globalmente!' : 
+                '✅ Salvo localmente - configure Firebase!';
             indicator.classList.add('show');
             setTimeout(() => {
                 indicator.classList.remove('show');
-            }, 2000);
+            }, 3000);
         }
 
-        // Load data from localStorage if available - ALWAYS loads saved data for all visitors
-        function loadData() {
-            const savedData = localStorage.getItem('barataommodas-data');
-            if (savedData) {
-                siteData = JSON.parse(savedData);
-                console.log('✅ Dados carregados automaticamente para todos os visitantes');
-                console.log('📦 Produtos carregados:', siteData.products.length);
+        // Load data from Firebase first, then localStorage as backup
+        async function loadData() {
+            const firebaseLoaded = await loadDataFromFirebase();
+            
+            if (!firebaseLoaded) {
+                // Fallback to localStorage
+                const savedData = localStorage.getItem('barataommodas-data');
+                if (savedData) {
+                    siteData = JSON.parse(savedData);
+                    console.log('✅ Dados carregados do armazenamento local');
+                }
             }
+            
             updatePageContent();
             renderProducts();
         }
 
-        // Save data to localStorage with auto-save indicator - PERMANENT GLOBAL STORAGE
-        function saveData() {
-            localStorage.setItem('barataommodas-data', JSON.stringify(siteData));
+        // Save data to Firebase first, then localStorage as backup
+        async function saveData() {
+            const firebaseSaved = await saveDataToFirebase();
             
-            // Also save to a global key that persists across all sessions
+            // Always save to localStorage as backup
+            localStorage.setItem('barataommodas-data', JSON.stringify(siteData));
             localStorage.setItem('barataommodas-global-data', JSON.stringify(siteData));
             
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             showSaveIndicator();
-            console.log('💾 SALVO PERMANENTEMENTE - Visível para TODOS os visitantes!');
-            console.log('🌐 Total de produtos salvos:', siteData.products.length);
             
-            // Update the base siteData in the code for permanent persistence
-            updateCodeWithNewData();
-        }
-
-        // Update the actual code data structure for permanent persistence
-        function updateCodeWithNewData() {
-            // This ensures new products are permanently integrated
-            console.log('🔄 Atualizando estrutura permanente do código...');
-            console.log('✅ Produtos agora fazem parte permanente do sistema');
+            if (firebaseSaved) {
+                console.log('🔥 SALVO NO FIREBASE - Visível globalmente!');
+            } else {
+                console.log('💾 Salvo localmente - Firebase indisponível');
+            }
+            console.log('🌐 Total de produtos salvos:', siteData.products.length);
         }
 
         // Update page content with stored data
@@ -787,7 +922,9 @@
                 isAdminMode = true;
                 closePasswordModal();
                 document.getElementById('adminPanel').classList.remove('hidden');
-                alert('Modo administrativo ativado! Todas as alterações serão salvas automaticamente.');
+                alert('Modo administrativo ativado! ' + (isFirebaseConnected ? 
+                    'Alterações serão salvas no Firebase.' : 
+                    'Configure o Firebase para salvamento na nuvem.'));
             } else {
                 document.getElementById('passwordError').classList.remove('hidden');
             }
@@ -1019,13 +1156,17 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
             };
             
             siteData.products.push(newProduct);
-            saveData(); // SALVA PERMANENTEMENTE - visível para todos!
+            saveData(); // SALVA PERMANENTEMENTE
             renderProducts();
             closeAddProductModal();
             
             // Confirmação visual
-            alert(`✅ PRODUTO ADICIONADO COM SUCESSO!\n\n📦 "${newProduct.name}" foi salvo permanentemente no sistema.\n\n🌐 Agora TODOS os visitantes verão este produto automaticamente!`);
-            console.log('🎉 NOVO PRODUTO SALVO GLOBALMENTE:', newProduct.name);
+            const message = isFirebaseConnected ? 
+                `✅ PRODUTO SALVO NO FIREBASE!\n\n📦 "${newProduct.name}" está agora visível globalmente!\n\n🌐 Todos os visitantes verão este produto automaticamente!` :
+                `✅ PRODUTO ADICIONADO!\n\n📦 "${newProduct.name}" foi salvo localmente.\n\n⚠️ Configure o Firebase para salvamento global.`;
+            
+            alert(message);
+            console.log('🎉 NOVO PRODUTO SALVO:', newProduct.name);
         });
 
         document.getElementById('editProductForm').addEventListener('submit', function(e) {
@@ -1143,35 +1284,26 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
         heroSection.addEventListener('mouseenter', stopSlideshow);
         heroSection.addEventListener('mouseleave', startSlideshow);
 
-        // Initialize - ALWAYS loads saved data for ALL visitors automatically
+        // Initialize - Try Firebase first, then local storage
         document.addEventListener('DOMContentLoaded', function() {
-            // Try to load from global storage first, then regular storage
-            const globalData = localStorage.getItem('barataommodas-global-data');
-            const regularData = localStorage.getItem('barataommodas-data');
+            // Initialize Firebase
+            initializeFirebase();
             
-            if (globalData) {
-                siteData = JSON.parse(globalData);
-                console.log('🌐 DADOS GLOBAIS CARREGADOS - Produtos visíveis para todos!');
-            } else if (regularData) {
-                siteData = JSON.parse(regularData);
-                console.log('✅ Dados carregados do armazenamento local');
-            }
+            // Load data (Firebase or local)
+            loadData();
             
-            loadData(); // Carrega dados salvos automaticamente para todos
+            // Start slideshow
             startSlideshow();
-            console.log('🚀 Sistema iniciado - TODOS os produtos salvos estão visíveis!');
+            
+            console.log('🚀 Sistema iniciado!');
             console.log('📊 Total de produtos disponíveis:', siteData.products.length);
+            console.log('🔥 Firebase:', isFirebaseConnected ? 'Conectado' : 'Modo local');
         });
         
         // Backup initialization if DOMContentLoaded already fired
-        // Try global storage first for maximum persistence
-        const globalData = localStorage.getItem('barataommodas-global-data');
-        if (globalData) {
-            siteData = JSON.parse(globalData);
-            console.log('🔄 Backup: Dados globais carregados');
-        }
+        initializeFirebase();
         loadData();
         startSlideshow();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987c052f37612755',t:'MTc1OTMyMjMzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987c442955252755',t:'MTc1OTMyNDkxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
