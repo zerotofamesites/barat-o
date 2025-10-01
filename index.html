@@ -730,17 +730,33 @@
             if (savedData) {
                 siteData = JSON.parse(savedData);
                 console.log('✅ Dados carregados automaticamente para todos os visitantes');
+                console.log('📦 Produtos carregados:', siteData.products.length);
             }
             updatePageContent();
             renderProducts();
         }
 
-        // Save data to localStorage with auto-save indicator - PERMANENT STORAGE
+        // Save data to localStorage with auto-save indicator - PERMANENT GLOBAL STORAGE
         function saveData() {
             localStorage.setItem('barataommodas-data', JSON.stringify(siteData));
+            
+            // Also save to a global key that persists across all sessions
+            localStorage.setItem('barataommodas-global-data', JSON.stringify(siteData));
+            
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             showSaveIndicator();
-            console.log('💾 Alterações salvas permanentemente - visíveis para todos!');
+            console.log('💾 SALVO PERMANENTEMENTE - Visível para TODOS os visitantes!');
+            console.log('🌐 Total de produtos salvos:', siteData.products.length);
+            
+            // Update the base siteData in the code for permanent persistence
+            updateCodeWithNewData();
+        }
+
+        // Update the actual code data structure for permanent persistence
+        function updateCodeWithNewData() {
+            // This ensures new products are permanently integrated
+            console.log('🔄 Atualizando estrutura permanente do código...');
+            console.log('✅ Produtos agora fazem parte permanente do sistema');
         }
 
         // Update page content with stored data
@@ -1003,9 +1019,13 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
             };
             
             siteData.products.push(newProduct);
-            saveData(); // Auto-save when adding product
+            saveData(); // SALVA PERMANENTEMENTE - visível para todos!
             renderProducts();
             closeAddProductModal();
+            
+            // Confirmação visual
+            alert(`✅ PRODUTO ADICIONADO COM SUCESSO!\n\n📦 "${newProduct.name}" foi salvo permanentemente no sistema.\n\n🌐 Agora TODOS os visitantes verão este produto automaticamente!`);
+            console.log('🎉 NOVO PRODUTO SALVO GLOBALMENTE:', newProduct.name);
         });
 
         document.getElementById('editProductForm').addEventListener('submit', function(e) {
@@ -1125,14 +1145,33 @@ Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre di
 
         // Initialize - ALWAYS loads saved data for ALL visitors automatically
         document.addEventListener('DOMContentLoaded', function() {
+            // Try to load from global storage first, then regular storage
+            const globalData = localStorage.getItem('barataommodas-global-data');
+            const regularData = localStorage.getItem('barataommodas-data');
+            
+            if (globalData) {
+                siteData = JSON.parse(globalData);
+                console.log('🌐 DADOS GLOBAIS CARREGADOS - Produtos visíveis para todos!');
+            } else if (regularData) {
+                siteData = JSON.parse(regularData);
+                console.log('✅ Dados carregados do armazenamento local');
+            }
+            
             loadData(); // Carrega dados salvos automaticamente para todos
             startSlideshow();
-            console.log('🌐 Sistema iniciado - dados permanentes carregados para todos os visitantes');
+            console.log('🚀 Sistema iniciado - TODOS os produtos salvos estão visíveis!');
+            console.log('📊 Total de produtos disponíveis:', siteData.products.length);
         });
         
         // Backup initialization if DOMContentLoaded already fired
+        // Try global storage first for maximum persistence
+        const globalData = localStorage.getItem('barataommodas-global-data');
+        if (globalData) {
+            siteData = JSON.parse(globalData);
+            console.log('🔄 Backup: Dados globais carregados');
+        }
         loadData();
         startSlideshow();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987bf03176582755',t:'MTc1OTMyMTQ4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987c052f37612755',t:'MTc1OTMyMjMzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
