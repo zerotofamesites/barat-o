@@ -7,6 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        body {
+            box-sizing: border-box;
+        }
+        
         .font-inter { font-family: 'Inter', sans-serif; }
         .font-playfair { font-family: 'Playfair Display', serif; }
         
@@ -188,9 +192,212 @@
             opacity: 0;
             animation: fadeInUp 1s ease-out 0.6s forwards;
         }
+        
+        /* Admin Panel Styles */
+        .central-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(212, 175, 55, 0.1);
+            color: #D4AF37;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+        
+        .central-btn:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: rgba(212, 175, 55, 0.5);
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .admin-panel {
+            position: fixed;
+            right: 20px;
+            top: 100px;
+            width: 300px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            z-index: 1000;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .editable {
+            border: 2px dashed #D4AF37;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .editable:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .editable-product {
+            border: 2px dashed #D4AF37;
+            padding: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+        
+        .editable-product:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+        
+        .edit-controls {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: #D4AF37;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: black;
+        }
+        
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body class="text-white font-inter" style="background-color: #0a0a0a;">
+    <!-- Central Button -->
+    <button class="central-btn" onclick="showPasswordModal()">CENTRAL</button>
+    
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold gradient-gold mb-4">Acesso Administrativo</h3>
+            <input type="password" id="adminPassword" placeholder="Digite a senha" 
+                   class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white mb-4">
+            <div class="flex space-x-3">
+                <button onclick="checkPassword()" class="btn-luxury px-6 py-2 text-black font-semibold rounded-full flex-1">
+                    ENTRAR
+                </button>
+                <button onclick="closePasswordModal()" class="px-6 py-2 bg-gray-600 text-white rounded-full flex-1">
+                    CANCELAR
+                </button>
+            </div>
+            <div id="passwordError" class="text-red-400 text-sm mt-2 hidden">Senha incorreta!</div>
+        </div>
+    </div>
+    
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold gradient-gold">Painel Admin</h3>
+            <button onclick="exitAdminMode()" class="text-red-400 hover:text-red-300">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <button onclick="toggleEditMode()" id="editModeBtn" class="w-full btn-luxury px-4 py-2 text-black font-semibold rounded-full">
+                ATIVAR EDIÇÃO
+            </button>
+            
+            <button onclick="showAddProductModal()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 text-white font-semibold rounded-full transition-colors">
+                ADICIONAR PRODUTO
+            </button>
+            
+            <button onclick="saveData()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white font-semibold rounded-full transition-colors">
+                SALVAR ALTERAÇÕES
+            </button>
+            
+            <div class="text-sm text-gray-400">
+                <p>Produtos: <span id="productCount">5</span></p>
+                <p>Última atualização: <span id="lastUpdate">Agora</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Product Modal -->
+    <div id="addProductModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 class="text-2xl font-bold gradient-gold mb-4">Adicionar Novo Produto</h3>
+            <form id="addProductForm" class="space-y-4">
+                <input type="text" id="productName" placeholder="Nome do produto" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <input type="text" id="productDescription" placeholder="Descrição" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <input type="url" id="productImage" placeholder="URL da imagem" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <input type="number" id="productPrice" placeholder="Preço (R$)" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <div class="flex space-x-3">
+                    <button type="submit" class="btn-luxury px-6 py-2 text-black font-semibold rounded-full flex-1">
+                        ADICIONAR
+                    </button>
+                    <button type="button" onclick="closeAddProductModal()" class="px-6 py-2 bg-gray-600 text-white rounded-full flex-1">
+                        CANCELAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 class="text-2xl font-bold gradient-gold mb-4">Editar Produto</h3>
+            <form id="editProductForm" class="space-y-4">
+                <input type="hidden" id="editProductId">
+                <input type="text" id="editProductName" placeholder="Nome do produto" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <input type="text" id="editProductDescription" placeholder="Descrição" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <input type="url" id="editProductImage" placeholder="URL da imagem" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <input type="number" id="editProductPrice" placeholder="Preço (R$)" 
+                       class="w-full p-3 bg-gray-800 border border-gray-600 rounded text-white" required>
+                <div class="flex space-x-3">
+                    <button type="submit" class="btn-luxury px-6 py-2 text-black font-semibold rounded-full flex-1">
+                        SALVAR
+                    </button>
+                    <button type="button" onclick="closeEditProductModal()" class="px-6 py-2 bg-gray-600 text-white rounded-full flex-1">
+                        CANCELAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="fixed w-full top-0 z-50 border-b border-gray-800" style="background-color: #0a0a0a;">
         <nav class="container mx-auto px-6 py-4">
@@ -200,7 +407,7 @@
                          alt="Baratão Modas Logo" 
                          class="h-32 w-32 object-contain rounded-lg"
                          onerror="this.src=''; this.alt='Logo não disponível'; this.style.display='none';">
-                    <div class="font-playfair text-3xl font-bold gradient-gold">
+                    <div class="font-playfair text-3xl font-bold gradient-gold editable-text" data-field="brand-name">
                         BARATÃO MODAS
                     </div>
                 </div>
@@ -242,10 +449,10 @@
         <div class="absolute inset-0 bg-black bg-opacity-75"></div>
         <div class="relative z-10 text-center px-6 hero-content">
             <h1 class="font-playfair text-6xl md:text-8xl font-bold mb-6 animate-fade-in-up">
-                <span class="gradient-gold">LUXO</span><br>
-                <span class="text-white">REDEFINIDO</span>
+                <span class="gradient-gold editable-text" data-field="hero-title-1">LUXO</span><br>
+                <span class="text-white editable-text" data-field="hero-title-2">REDEFINIDO</span>
             </h1>
-            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto animate-fade-in-up-delay">
+            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto animate-fade-in-up-delay editable-text" data-field="hero-subtitle">
                 Descubra a elegância atemporal com nossa coleção exclusiva de alta qualidade
             </p>
             <button class="btn-luxury px-8 py-4 text-black font-semibold text-lg rounded-full hover:shadow-2xl animate-fade-in-up-delay-2">
@@ -273,227 +480,12 @@
     <section id="collection" class="py-20 px-6">
         <div class="container mx-auto">
             <div class="text-center mb-16">
-                <h2 class="font-playfair text-5xl font-bold gradient-gold mb-4">COLEÇÃO EXCLUSIVA</h2>
-                <p class="text-xl text-gray-400">Peças selecionadas para o seu estilo único</p>
+                <h2 class="font-playfair text-5xl font-bold gradient-gold mb-4 editable-text" data-field="collection-title">COLEÇÃO EXCLUSIVA</h2>
+                <p class="text-xl text-gray-400 editable-text" data-field="collection-subtitle">Peças selecionadas para o seu estilo único</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Produto 1 -->
-                <div class="product-card rounded-2xl overflow-hidden hover-lift luxury-shadow">
-                    <div class="h-80 bg-cover bg-center relative" style="background-image: url('https://blogger.googleusercontent.com/img/a/AVvXsEggVlynU8HQs3KlhV40fOJcHFptR7PCJuq8VnjBhHu9pK_JwyO6yH68aG06O18Vj-8CiMkVBQem66a4X4LO9udq3vE4NCmN1eLe9iov5d3tj-IbjZ4gmJGiklP5UX1lL3qYMHwgl50t71AsOUuXOK2zjyZHfxEJpaOFDER7Sh35zl-Mk0WkYi_8L_Kvj1gP');">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-end">
-                            <div class="p-4 text-white">
-                                <h3 class="text-xl font-semibold">CAMISA PREMIUM</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-playfair text-2xl font-bold mb-2">Camisa Social Premium</h3>
-                        <p class="text-gray-400 mb-4">Elegância clássica em algodão egípcio</p>
-                        
-                        <!-- Cores -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Cores:</p>
-                            <div class="flex space-x-2">
-                                <div class="color-option bg-blue-900 color-selected" data-color="azul"></div>
-                                <div class="color-option bg-white" data-color="branco"></div>
-                                <div class="color-option bg-gray-800" data-color="preto"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Tamanhos -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Tamanhos:</p>
-                            <div class="flex space-x-2">
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">P</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm size-selected">M</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">G</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">GG</button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-3xl font-bold gradient-gold">R$ 299</span>
-                            <button class="btn-luxury px-6 py-2 text-black font-semibold rounded-full">
-                                COMPRAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Produto 2 -->
-                <div class="product-card rounded-2xl overflow-hidden hover-lift luxury-shadow">
-                    <div class="h-80 bg-cover bg-center relative" style="background-image: url('https://blogger.googleusercontent.com/img/a/AVvXsEiizshgr3EeAG_iJLkMpeRW-gA5s6xHRchVo0p8Ogvfh2DGjwp5LHyF5GYOMCqo05GtntOcBa_dnYPX8QBfrRbrWidQfoLgtpGlBqmcP_7jOpHq0jXORrTzgyjsKQnER5F6wTDo0h6HAZ6JJm2SI68YHhABpfUIj5tiIf7A6OdsBR_BNvCQVho226H_O7yJ');">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-end">
-                            <div class="p-4 text-white">
-                                <h3 class="text-xl font-semibold">BLAZER EXECUTIVO</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-playfair text-2xl font-bold mb-2">Blazer Executivo</h3>
-                        <p class="text-gray-400 mb-4">Sofisticação para o ambiente corporativo</p>
-                        
-                        <!-- Cores -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Cores:</p>
-                            <div class="flex space-x-2">
-                                <div class="color-option bg-gray-900 color-selected" data-color="preto"></div>
-                                <div class="color-option bg-blue-900" data-color="marinho"></div>
-                                <div class="color-option bg-gray-600" data-color="cinza"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Tamanhos -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Tamanhos:</p>
-                            <div class="flex space-x-2">
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">P</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">M</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm size-selected">G</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">GG</button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-3xl font-bold gradient-gold">R$ 599</span>
-                            <button class="btn-luxury px-6 py-2 text-black font-semibold rounded-full">
-                                COMPRAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Produto 3 -->
-                <div class="product-card rounded-2xl overflow-hidden hover-lift luxury-shadow">
-                    <div class="h-80 bg-cover bg-center relative" style="background-image: url('https://blogger.googleusercontent.com/img/a/AVvXsEiDieZMkjw8sc2-MQ458DpuJ-Xi6n4tcGq52qk1NyPvfk-k1A7ytgw4KhQW90KTVXTa2PFqPfxGv-ijZWRaLb9nyisTd5Oi4iMUD8YBkEyspmf_-oagbprP0rFYcRiXdn1XERfzIIO2kD-GEayLJPgewfppzWSIlJp2YZwcZQWBI9WSZ8kN00hxuFO-j3BJ');">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-end">
-                            <div class="p-4 text-white">
-                                <h3 class="text-xl font-semibold">POLO LUXURY</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-playfair text-2xl font-bold mb-2">Polo Luxury Edition</h3>
-                        <p class="text-gray-400 mb-4">Conforto e estilo em malha premium</p>
-                        
-                        <!-- Cores -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Cores:</p>
-                            <div class="flex space-x-2">
-                                <div class="color-option bg-indigo-800 color-selected" data-color="azul"></div>
-                                <div class="color-option bg-red-800" data-color="vermelho"></div>
-                                <div class="color-option bg-green-800" data-color="verde"></div>
-                                <div class="color-option bg-white" data-color="branco"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Tamanhos -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Tamanhos:</p>
-                            <div class="flex space-x-2">
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">P</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm size-selected">M</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">G</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">GG</button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-3xl font-bold gradient-gold">R$ 199</span>
-                            <button class="btn-luxury px-6 py-2 text-black font-semibold rounded-full">
-                                COMPRAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Produto 4 -->
-                <div class="product-card rounded-2xl overflow-hidden hover-lift luxury-shadow">
-                    <div class="h-80 bg-cover bg-center relative" style="background-image: url('https://blogger.googleusercontent.com/img/a/AVvXsEjyuSIaabY9_ZIp79rf_kKzHqm22tzcyMY1KPhx94Dd7LgXUh6wnWT3r5S4B9PB-N_xR_-WpQgfqdzpxYX1L7CXrgQ7K_jcDsor3XN4l7bj_JIPWZwS0bjdKofC_lu4KSKjNMuIqW_bZfQzW7Bm118UlPdx3_Bh6xkuCZZrPkP_hPhW1kCii75-z_OkPN0O');">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-end">
-                            <div class="p-4 text-white">
-                                <h3 class="text-xl font-semibold">CALÇA ALFAIATARIA</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-playfair text-2xl font-bold mb-2">Calça Alfaiataria</h3>
-                        <p class="text-gray-400 mb-4">Corte perfeito em tecido nobre</p>
-                        
-                        <!-- Cores -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Cores:</p>
-                            <div class="flex space-x-2">
-                                <div class="color-option bg-blue-900 color-selected" data-color="marinho"></div>
-                                <div class="color-option bg-gray-800" data-color="preto"></div>
-                                <div class="color-option bg-gray-600" data-color="cinza"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Tamanhos -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Tamanhos:</p>
-                            <div class="flex space-x-2">
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">38</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm size-selected">40</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">42</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">44</button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-3xl font-bold gradient-gold">R$ 399</span>
-                            <button class="btn-luxury px-6 py-2 text-black font-semibold rounded-full">
-                                COMPRAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Produto 5 -->
-                <div class="product-card rounded-2xl overflow-hidden hover-lift luxury-shadow">
-                    <div class="h-80 bg-cover bg-center relative" style="background-image: url('https://blogger.googleusercontent.com/img/a/AVvXsEgKVxNy19Kx6b6Hy4fiLIP7zo2NJ38dvXHyXEpSv2Kf0fL9XAbEYB4Fy-aNA96eLCE78jVHJjyNGnigGBFwg-Nu40mFgNl_pGM5z8su7NYK-zyKHP9-EDEB_7dRDHcU2JKojW2_xh2NvGoxDuRUdHx0Mx886Aw5ABOt1EjVN4fk1zGFI5UU618XQoHvGyNC');">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-end">
-                            <div class="p-4 text-white">
-                                <h3 class="text-xl font-semibold">VESTIDO ELEGANCE</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <h3 class="font-playfair text-2xl font-bold mb-2">Vestido Elegance</h3>
-                        <p class="text-gray-400 mb-4">Sofisticação feminina em cada detalhe</p>
-                        
-                        <!-- Cores -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Cores:</p>
-                            <div class="flex space-x-2">
-                                <div class="color-option bg-purple-800 color-selected" data-color="roxo"></div>
-                                <div class="color-option bg-gray-900" data-color="preto"></div>
-                                <div class="color-option bg-red-800" data-color="vermelho"></div>
-                                <div class="color-option bg-blue-900" data-color="azul"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Tamanhos -->
-                        <div class="mb-4">
-                            <p class="text-sm text-gray-300 mb-2">Tamanhos:</p>
-                            <div class="flex space-x-2">
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">P</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm size-selected">M</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">G</button>
-                                <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">GG</button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-3xl font-bold gradient-gold">R$ 449</span>
-                            <button class="btn-luxury px-6 py-2 text-black font-semibold rounded-full">
-                                COMPRAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Products will be loaded here -->
             </div>
         </div>
     </section>
@@ -503,27 +495,27 @@
         <div class="container mx-auto">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h2 class="font-playfair text-5xl font-bold gradient-gold mb-6">NOSSA HISTÓRIA</h2>
-                    <p class="text-xl text-gray-300 mb-6">
+                    <h2 class="font-playfair text-5xl font-bold gradient-gold mb-6 editable-text" data-field="about-title">NOSSA HISTÓRIA</h2>
+                    <p class="text-xl text-gray-300 mb-6 editable-text" data-field="about-text-1">
                         Somos loja online em atacado com fabricação própria. 
                         Enviamos para todo Brasil com qualidade premium e design atemporal para clientes exigentes.
                     </p>
-                    <p class="text-lg text-gray-400 mb-8">
+                    <p class="text-lg text-gray-400 mb-8 editable-text" data-field="about-text-2">
                         Temos referências e cada peça é cuidadosamente desenvolvida com os melhores materiais, 
                         garantindo durabilidade, conforto e elegância incomparáveis.
                     </p>
                     <div class="grid grid-cols-3 gap-6 text-center">
                         <div>
-                            <div class="text-3xl font-bold gradient-gold">15+</div>
-                            <div class="text-gray-400">Anos de Experiência</div>
+                            <div class="text-3xl font-bold gradient-gold editable-text" data-field="stat-1-number">15+</div>
+                            <div class="text-gray-400 editable-text" data-field="stat-1-text">Anos de Experiência</div>
                         </div>
                         <div>
-                            <div class="text-3xl font-bold gradient-gold">50K+</div>
-                            <div class="text-gray-400">Clientes Satisfeitos</div>
+                            <div class="text-3xl font-bold gradient-gold editable-text" data-field="stat-2-number">50K+</div>
+                            <div class="text-gray-400 editable-text" data-field="stat-2-text">Clientes Satisfeitos</div>
                         </div>
                         <div>
-                            <div class="text-3xl font-bold gradient-gold">100%</div>
-                            <div class="text-gray-400">Qualidade Premium</div>
+                            <div class="text-3xl font-bold gradient-gold editable-text" data-field="stat-3-number">100%</div>
+                            <div class="text-gray-400 editable-text" data-field="stat-3-text">Qualidade Premium</div>
                         </div>
                     </div>
                 </div>
@@ -545,8 +537,8 @@
     <!-- Contact Section -->
     <section id="contact" class="py-20 px-6">
         <div class="container mx-auto text-center">
-            <h2 class="font-playfair text-5xl font-bold gradient-gold mb-6">ENTRE EM CONTATO</h2>
-            <p class="text-xl text-gray-400 mb-12">Estamos aqui para atender você com excelência</p>
+            <h2 class="font-playfair text-5xl font-bold gradient-gold mb-6 editable-text" data-field="contact-title">ENTRE EM CONTATO</h2>
+            <p class="text-xl text-gray-400 mb-12 editable-text" data-field="contact-subtitle">Estamos aqui para atender você com excelência</p>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                 <div class="text-center">
@@ -556,7 +548,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">ENDEREÇO</h3>
-                    <p class="text-gray-400">Rua da Elegância, 123<br>Centro - São Paulo, SP</p>
+                    <p class="text-gray-400 editable-text" data-field="address">Rua da Elegância, 123<br>Centro - São Paulo, SP</p>
                 </div>
                 
                 <div class="text-center">
@@ -566,7 +558,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">TELEFONE</h3>
-                    <p class="text-gray-400">(83) 99394-3946<br>WhatsApp disponível</p>
+                    <p class="text-gray-400 editable-text" data-field="phone">(83) 99394-3946<br>WhatsApp disponível</p>
                 </div>
                 
                 <div class="text-center">
@@ -576,7 +568,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">EMAIL</h3>
-                    <p class="text-gray-400">contato@barataommodas.com<br>Resposta em 24h</p>
+                    <p class="text-gray-400 editable-text" data-field="email">contato@barataommodas.com<br>Resposta em 24h</p>
                 </div>
             </div>
             
@@ -590,10 +582,10 @@
     <footer class="py-12 px-6 border-t border-gray-800" style="background-color: #1a1a1a;">
         <div class="container mx-auto">
             <div class="text-center mb-8">
-                <div class="font-playfair text-4xl font-bold gradient-gold mb-4">
+                <div class="font-playfair text-4xl font-bold gradient-gold mb-4 editable-text" data-field="footer-brand">
                     BARATÃO MODAS
                 </div>
-                <p class="text-gray-400">Luxo e elegância em cada peça</p>
+                <p class="text-gray-400 editable-text" data-field="footer-tagline">Luxo e elegância em cada peça</p>
             </div>
             
             <div class="flex justify-center space-x-6 mb-8">
@@ -621,7 +613,390 @@
     </footer>
 
     <script>
-        // Smooth scrolling for navigation links
+        // Admin System Variables
+        let isAdminMode = false;
+        let isEditMode = false;
+        const ADMIN_PASSWORD = 'albertobaratão123';
+        
+        // Data Storage
+        let siteData = {
+            texts: {
+                'brand-name': 'BARATÃO MODAS',
+                'hero-title-1': 'LUXO',
+                'hero-title-2': 'REDEFINIDO',
+                'hero-subtitle': 'Descubra a elegância atemporal com nossa coleção exclusiva de alta qualidade',
+                'collection-title': 'COLEÇÃO EXCLUSIVA',
+                'collection-subtitle': 'Peças selecionadas para o seu estilo único',
+                'about-title': 'NOSSA HISTÓRIA',
+                'about-text-1': 'Somos loja online em atacado com fabricação própria. Enviamos para todo Brasil com qualidade premium e design atemporal para clientes exigentes.',
+                'about-text-2': 'Temos referências e cada peça é cuidadosamente desenvolvida com os melhores materiais, garantindo durabilidade, conforto e elegância incomparáveis.',
+                'stat-1-number': '15+',
+                'stat-1-text': 'Anos de Experiência',
+                'stat-2-number': '50K+',
+                'stat-2-text': 'Clientes Satisfeitos',
+                'stat-3-number': '100%',
+                'stat-3-text': 'Qualidade Premium',
+                'contact-title': 'ENTRE EM CONTATO',
+                'contact-subtitle': 'Estamos aqui para atender você com excelência',
+                'address': 'Rua da Elegância, 123<br>Centro - São Paulo, SP',
+                'phone': '(83) 99394-3946<br>WhatsApp disponível',
+                'email': 'contato@barataommodas.com<br>Resposta em 24h',
+                'footer-brand': 'BARATÃO MODAS',
+                'footer-tagline': 'Luxo e elegância em cada peça'
+            },
+            products: [
+                {
+                    id: 1,
+                    name: 'Camisa Social Premium',
+                    description: 'Elegância clássica em algodão egípcio',
+                    image: 'https://blogger.googleusercontent.com/img/a/AVvXsEggVlynU8HQs3KlhV40fOJcHFptR7PCJuq8VnjBhHu9pK_JwyO6yH68aG06O18Vj-8CiMkVBQem66a4X4LO9udq3vE4NCmN1eLe9iov5d3tj-IbjZ4gmJGiklP5UX1lL3qYMHwgl50t71AsOUuXOK2zjyZHfxEJpaOFDER7Sh35zl-Mk0WkYi_8L_Kvj1gP',
+                    price: 299,
+                    category: 'CAMISA PREMIUM'
+                },
+                {
+                    id: 2,
+                    name: 'Blazer Executivo',
+                    description: 'Sofisticação para o ambiente corporativo',
+                    image: 'https://blogger.googleusercontent.com/img/a/AVvXsEiizshgr3EeAG_iJLkMpeRW-gA5s6xHRchVo0p8Ogvfh2DGjwp5LHyF5GYOMCqo05GtntOcBa_dnYPX8QBfrRbrWidQfoLgtpGlBqmcP_7jOpHq0jXORrTzgyjsKQnER5F6wTDo0h6HAZ6JJm2SI68YHhABpfUIj5tiIf7A6OdsBR_BNvCQVho226H_O7yJ',
+                    price: 599,
+                    category: 'BLAZER EXECUTIVO'
+                },
+                {
+                    id: 3,
+                    name: 'Polo Luxury Edition',
+                    description: 'Conforto e estilo em malha premium',
+                    image: 'https://blogger.googleusercontent.com/img/a/AVvXsEiDieZMkjw8sc2-MQ458DpuJ-Xi6n4tcGq52qk1NyPvfk-k1A7ytgw4KhQW90KTVXTa2PFqPfxGv-ijZWRaLb9nyisTd5Oi4iMUD8YBkEyspmf_-oagbprP0rFYcRiXdn1XERfzIIO2kD-GEayLJPgewfppzWSIlJp2YZwcZQWBI9WSZ8kN00hxuFO-j3BJ',
+                    price: 199,
+                    category: 'POLO LUXURY'
+                },
+                {
+                    id: 4,
+                    name: 'Calça Alfaiataria',
+                    description: 'Corte perfeito em tecido nobre',
+                    image: 'https://blogger.googleusercontent.com/img/a/AVvXsEjyuSIaabY9_ZIp79rf_kKzHqm22tzcyMY1KPhx94Dd7LgXUh6wnWT3r5S4B9PB-N_xR_-WpQgfqdzpxYX1L7CXrgQ7K_jcDsor3XN4l7bj_JIPWZwS0bjdKofC_lu4KSKjNMuIqW_bZfQzW7Bm118UlPdx3_Bh6xkuCZZrPkP_hPhW1kCii75-z_OkPN0O',
+                    price: 399,
+                    category: 'CALÇA ALFAIATARIA'
+                },
+                {
+                    id: 5,
+                    name: 'Vestido Elegance',
+                    description: 'Sofisticação feminina em cada detalhe',
+                    image: 'https://blogger.googleusercontent.com/img/a/AVvXsEgKVxNy19Kx6b6Hy4fiLIP7zo2NJ38dvXHyXEpSv2Kf0fL9XAbEYB4Fy-aNA96eLCE78jVHJjyNGnigGBFwg-Nu40mFgNl_pGM5z8su7NYK-zyKHP9-EDEB_7dRDHcU2JKojW2_xh2NvGoxDuRUdHx0Mx886Aw5ABOt1EjVN4fk1zGFI5UU618XQoHvGyNC',
+                    price: 449,
+                    category: 'VESTIDO ELEGANCE'
+                }
+            ]
+        };
+
+        // Load data from localStorage if available
+        function loadData() {
+            const savedData = localStorage.getItem('barataommodas-data');
+            if (savedData) {
+                siteData = JSON.parse(savedData);
+            }
+            updatePageContent();
+            renderProducts();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('barataommodas-data', JSON.stringify(siteData));
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            alert('Dados salvos com sucesso!');
+        }
+
+        // Update page content with stored data
+        function updatePageContent() {
+            document.querySelectorAll('.editable-text').forEach(element => {
+                const field = element.getAttribute('data-field');
+                if (siteData.texts[field]) {
+                    element.innerHTML = siteData.texts[field];
+                }
+            });
+        }
+
+        // Admin Functions
+        function showPasswordModal() {
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('adminPassword').focus();
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('passwordError').classList.add('hidden');
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                isAdminMode = true;
+                closePasswordModal();
+                document.getElementById('adminPanel').classList.remove('hidden');
+                alert('Modo administrativo ativado!');
+            } else {
+                document.getElementById('passwordError').classList.remove('hidden');
+            }
+        }
+
+        function exitAdminMode() {
+            isAdminMode = false;
+            isEditMode = false;
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.querySelectorAll('.editable').forEach(el => el.classList.remove('editable'));
+            document.getElementById('editModeBtn').textContent = 'ATIVAR EDIÇÃO';
+        }
+
+        function toggleEditMode() {
+            if (!isAdminMode) return;
+            
+            isEditMode = !isEditMode;
+            const btn = document.getElementById('editModeBtn');
+            
+            if (isEditMode) {
+                btn.textContent = 'DESATIVAR EDIÇÃO';
+                document.querySelectorAll('.editable-text').forEach(el => {
+                    el.classList.add('editable');
+                    el.contentEditable = true;
+                    el.addEventListener('blur', saveTextEdit);
+                });
+                document.querySelectorAll('.editable-product').forEach(el => {
+                    el.contentEditable = true;
+                    el.addEventListener('blur', saveProductEdit);
+                });
+            } else {
+                btn.textContent = 'ATIVAR EDIÇÃO';
+                document.querySelectorAll('.editable').forEach(el => {
+                    el.classList.remove('editable');
+                    el.contentEditable = false;
+                });
+                document.querySelectorAll('.editable-product').forEach(el => {
+                    el.contentEditable = false;
+                });
+            }
+            renderProducts(); // Re-render to apply/remove editable classes
+        }
+
+        function saveTextEdit(event) {
+            const field = event.target.getAttribute('data-field');
+            siteData.texts[field] = event.target.innerHTML;
+        }
+
+        function saveProductEdit(event) {
+            const productId = parseInt(event.target.getAttribute('data-product-id'));
+            const field = event.target.getAttribute('data-field');
+            const productIndex = siteData.products.findIndex(p => p.id === productId);
+            
+            if (productIndex !== -1) {
+                let value = event.target.textContent;
+                if (field === 'price') {
+                    value = parseInt(value.replace(/[^\d]/g, '')) || 0;
+                }
+                siteData.products[productIndex][field] = value;
+                
+                if (field === 'name') {
+                    siteData.products[productIndex].category = value.toUpperCase();
+                }
+            }
+        }
+
+        // Product Management
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+            
+            siteData.products.forEach(product => {
+                const productCard = createProductCard(product);
+                grid.appendChild(productCard);
+            });
+            
+            document.getElementById('productCount').textContent = siteData.products.length;
+        }
+
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card rounded-2xl overflow-hidden hover-lift luxury-shadow';
+            card.innerHTML = `
+                <div class="h-80 bg-cover bg-center relative" style="background-image: url('${product.image}');">
+                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-end">
+                        <div class="p-4 text-white">
+                            <h3 class="text-xl font-semibold">${product.category}</h3>
+                        </div>
+                    </div>
+                    ${isAdminMode ? `
+                        <div class="absolute top-2 right-2 flex space-x-2">
+                            <button onclick="editProduct(${product.id})" class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </button>
+                            <button onclick="deleteProduct(${product.id})" class="bg-red-600 text-white p-2 rounded-full hover:bg-red-700">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="p-6">
+                    <h3 class="font-playfair text-2xl font-bold mb-2 ${isAdminMode && isEditMode ? 'editable-product' : ''}" data-product-id="${product.id}" data-field="name">${product.name}</h3>
+                    <p class="text-gray-400 mb-4 ${isAdminMode && isEditMode ? 'editable-product' : ''}" data-product-id="${product.id}" data-field="description">${product.description}</p>
+                    
+                    <!-- Cores -->
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-300 mb-2">Cores:</p>
+                        <div class="flex space-x-2">
+                            <div class="color-option bg-blue-900 color-selected" data-color="azul"></div>
+                            <div class="color-option bg-white" data-color="branco"></div>
+                            <div class="color-option bg-gray-800" data-color="preto"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tamanhos -->
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-300 mb-2">Tamanhos:</p>
+                        <div class="flex space-x-2">
+                            <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">P</button>
+                            <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm size-selected">M</button>
+                            <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">G</button>
+                            <button class="size-selector px-3 py-1 border border-gray-600 rounded text-sm">GG</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-3xl font-bold gradient-gold ${isAdminMode && isEditMode ? 'editable-product' : ''}" data-product-id="${product.id}" data-field="price">R$ ${product.price}</span>
+                        <button class="btn-luxury px-6 py-2 text-black font-semibold rounded-full" onclick="buyProduct(${product.id})">
+                            COMPRAR
+                        </button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function showAddProductModal() {
+            if (!isAdminMode) return;
+            document.getElementById('addProductModal').classList.remove('hidden');
+        }
+
+        function closeAddProductModal() {
+            document.getElementById('addProductModal').classList.add('hidden');
+            document.getElementById('addProductForm').reset();
+        }
+
+        function deleteProduct(productId) {
+            if (!isAdminMode) return;
+            if (confirm('Tem certeza que deseja excluir este produto?')) {
+                siteData.products = siteData.products.filter(p => p.id !== productId);
+                renderProducts();
+            }
+        }
+
+        function editProduct(productId) {
+            if (!isAdminMode) return;
+            const product = siteData.products.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductDescription').value = product.description;
+            document.getElementById('editProductImage').value = product.image;
+            document.getElementById('editProductPrice').value = product.price;
+            
+            document.getElementById('editProductModal').classList.remove('hidden');
+        }
+
+        function closeEditProductModal() {
+            document.getElementById('editProductModal').classList.add('hidden');
+            document.getElementById('editProductForm').reset();
+        }
+
+        function buyProduct(productId) {
+            const product = siteData.products.find(p => p.id === productId);
+            if (!product) return;
+
+            // Get selected color and size
+            const productCard = event.target.closest('.product-card');
+            const selectedColor = productCard.querySelector('.color-selected')?.getAttribute('data-color') || 'não especificada';
+            const selectedSize = productCard.querySelector('.size-selected')?.textContent || 'não especificado';
+
+            // Create WhatsApp message
+            const message = `🛍️ *PEDIDO BARATÃO MODAS*
+
+📦 *Produto:* ${product.name}
+💰 *Preço:* R$ ${product.price}
+📝 *Descrição:* ${product.description}
+🎨 *Cor:* ${selectedColor}
+📏 *Tamanho:* ${selectedSize}
+
+🔗 *Link da imagem:* ${product.image}
+
+Olá! Gostaria de fazer este pedido. Podem me enviar mais informações sobre disponibilidade e formas de pagamento?`;
+
+            const whatsappUrl = `https://wa.me/5583993943946?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+
+            // Visual feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'ENVIADO!';
+            button.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #B8860B 100%)';
+            }, 2000);
+        }
+
+        // Event Listeners
+        document.getElementById('addProductForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newProduct = {
+                id: Date.now(),
+                name: document.getElementById('productName').value,
+                description: document.getElementById('productDescription').value,
+                image: document.getElementById('productImage').value,
+                price: parseInt(document.getElementById('productPrice').value),
+                category: document.getElementById('productName').value.toUpperCase()
+            };
+            
+            siteData.products.push(newProduct);
+            renderProducts();
+            closeAddProductModal();
+            alert('Produto adicionado com sucesso!');
+        });
+
+        document.getElementById('editProductForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const productId = parseInt(document.getElementById('editProductId').value);
+            const productIndex = siteData.products.findIndex(p => p.id === productId);
+            
+            if (productIndex !== -1) {
+                siteData.products[productIndex] = {
+                    id: productId,
+                    name: document.getElementById('editProductName').value,
+                    description: document.getElementById('editProductDescription').value,
+                    image: document.getElementById('editProductImage').value,
+                    price: parseInt(document.getElementById('editProductPrice').value),
+                    category: document.getElementById('editProductName').value.toUpperCase()
+                };
+                
+                renderProducts();
+                closeEditProductModal();
+                alert('Produto atualizado com sucesso!');
+            }
+        });
+
+        // Password modal enter key
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // Original functionality
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -635,71 +1010,26 @@
             });
         });
 
-        // Color selection functionality
-        document.querySelectorAll('.color-option').forEach(option => {
-            option.addEventListener('click', function() {
-                // Remove selected class from siblings
-                this.parentNode.querySelectorAll('.color-option').forEach(sibling => {
+        // Color and size selection
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('color-option')) {
+                e.target.parentNode.querySelectorAll('.color-option').forEach(sibling => {
                     sibling.classList.remove('color-selected');
                 });
-                // Add selected class to clicked option
-                this.classList.add('color-selected');
-            });
-        });
-
-        // Size selection functionality
-        document.querySelectorAll('.size-selector').forEach(button => {
-            button.addEventListener('click', function() {
-                // Remove selected class from siblings
-                this.parentNode.querySelectorAll('.size-selector').forEach(sibling => {
+                e.target.classList.add('color-selected');
+            }
+            
+            if (e.target.classList.contains('size-selector')) {
+                e.target.parentNode.querySelectorAll('.size-selector').forEach(sibling => {
                     sibling.classList.remove('size-selected');
                 });
-                // Add selected class to clicked button
-                this.classList.add('size-selected');
-            });
-        });
-
-        // Shopping cart functionality
-        let cartCount = 0;
-        const cartCountElement = document.querySelector('.absolute.bg-yellow-400');
-
-        document.querySelectorAll('.btn-luxury').forEach(button => {
-            if (button.textContent.trim() === 'COMPRAR') {
-                button.addEventListener('click', function() {
-                    cartCount++;
-                    cartCountElement.textContent = cartCount;
-                    
-                    // Visual feedback
-                    this.textContent = 'ADICIONADO!';
-                    this.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
-                    
-                    setTimeout(() => {
-                        this.textContent = 'COMPRAR';
-                        this.style.background = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #B8860B 100%)';
-                    }, 1500);
-                });
+                e.target.classList.add('size-selected');
             }
         });
 
-        // Header background on scroll - keeping solid background
-        window.addEventListener('scroll', function() {
-            const header = document.querySelector('header');
-            // Header remains solid black at all times
-            header.style.backgroundColor = '#0a0a0a';
-        });
-
-        // Mobile menu toggle (for future implementation)
-        const mobileMenuButton = document.createElement('button');
-        mobileMenuButton.className = 'md:hidden text-white';
-        mobileMenuButton.innerHTML = `
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-        `;
-        
-        // Add mobile menu button to navigation
-        const nav = document.querySelector('nav .flex');
-        nav.appendChild(mobileMenuButton);
+        // Shopping cart display (visual only)
+        let cartCount = 0;
+        const cartCountElement = document.querySelector('.absolute.bg-yellow-400');
 
         // Background Slideshow functionality
         let currentSlide = 0;
@@ -715,14 +1045,11 @@
         }
 
         function showSlide(slideIndex) {
-            // Remove active class from current slide
             slides[currentSlide].classList.remove('active');
             slides[currentSlide].classList.add('fade-out');
             
-            // Update current slide
             currentSlide = slideIndex;
             
-            // Add active class to new slide
             setTimeout(() => {
                 slides.forEach(slide => slide.classList.remove('fade-out'));
                 slides[currentSlide].classList.add('active');
@@ -743,22 +1070,21 @@
             clearInterval(slideInterval);
         }
 
-        // Indicator click functionality
         indicators.forEach((indicator, index) => {
             indicator.addEventListener('click', () => {
                 stopSlideshow();
                 showSlide(index);
-                setTimeout(startSlideshow, 3000); // Restart after 3 seconds
+                setTimeout(startSlideshow, 3000);
             });
         });
 
-        // Pause on hover
         const heroSection = document.querySelector('#home');
         heroSection.addEventListener('mouseenter', stopSlideshow);
         heroSection.addEventListener('mouseleave', startSlideshow);
 
-        // Start slideshow
+        // Initialize
+        loadData();
         startSlideshow();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98016f93f3d8f623',t:'MTc1ODAzNjk0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'987bc03e50b82755',t:'MTc1OTMxOTUxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
